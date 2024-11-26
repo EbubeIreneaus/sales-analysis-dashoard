@@ -2,23 +2,34 @@
 import type { Product } from 'src/types/ProductTypes';
 import { QTableColumn, useTimeout, useQuasar } from 'quasar';
 import { useProductStore } from 'src/stores/Products';
-import { defineAsyncComponent, ref, watch } from 'vue';
+import {
+  defineAsyncComponent,
+  inject,
+  onMounted,
+  ref,
+  watch,
+} from 'vue';
 const EditProductDialog = defineAsyncComponent(
   () => import('src/components/Dialog/EditProductDialog.vue')
 );
+const ProductImageDialog = defineAsyncComponent(
+  () => import('src/components/Dialog/ProductImageUploader.vue')
+);
+
+const api = inject('api');
 
 const props = defineProps<{ page: 'home' | 'product' }>();
 
 const $q = useQuasar();
 
-const products = ref<Product[]>([]);
-
-products.value = useProductStore().product;
+const products = ref<Product[]>(useProductStore().product);
 
 const search = ref('');
 
 const product_to_edit_id = ref<number>(0);
 const showEdit = ref(false);
+const showPrImageUploader = ref(false);
+const prImageToEdit = ref();
 const { registerTimeout } = useTimeout();
 
 let columns: QTableColumn[] = [
@@ -50,6 +61,13 @@ let columns: QTableColumn[] = [
     field: 'unit_price',
     align: 'left',
   },
+  {
+    name: 'market_price',
+    label: 'Market Price',
+    sortable: true,
+    field: 'market_price',
+    align: 'left',
+  },
 ];
 
 if (props.page === 'product') {
@@ -60,6 +78,13 @@ if (props.page === 'product') {
     align: 'left',
   });
 }
+
+watch(
+  () => useProductStore().product,
+  (val) => {
+    products.value = val;
+  }
+);
 
 watch(
   () => search.value.toLowerCase(),
@@ -85,10 +110,64 @@ function deleteProduct(id: number) {
     color: 'accent',
     ok: "I'am sure",
   }).onOk(() => {
-    useProductStore().del(id);
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  })
+    fetch(`${api}/products`, {
+      method: 'delete',
+      body: JSON.stringify({ productId: id }),
+      credentials: 'same-origin',
+      headers: {
+        authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+        'Content-Type': 'application/json',
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status) {
+          $q.notify({
+            message: 'Product deleted successfully',
+            color: 'green-14',
+            icon: 'check_circle',
+          });
+        } else {
+          $q.notify({
+            message: data.msg,
+            color: 'red-14',
+            icon: 'error',
+          });
+        }
+      })
+      .catch((err) => {
+        $q.notify({
+          message: err.message,
+          color: 'red-14',
+          icon: 'error',
+        });
+      });
+  });
 }
+
+function updateProductImgae(id: number | null, action: 'open' | 'close') {
+  if (action == 'open') {
+    showPrImageUploader.value = true;
+    prImageToEdit.value = id;
+  } else {
+    showPrImageUploader.value = false;
+    prImageToEdit.value = null;
+  }
+}
+
+function dismissImageEditDialogWithSuccess() {
+  showPrImageUploader.value = false;
+  $q.notify({
+    message: 'Image Updated Successfuly',
+    color: 'green-13',
+    icon: 'check_circle',
+  });
+}
+
+
+onMounted(() => {
+//
+});
 </script>
 
 <template>
@@ -124,11 +203,18 @@ function deleteProduct(id: number) {
         >
           <template v-slot:body="props">
             <tr :props="props">
-              <td :key="props.row.imgage">
+              <td :key="props.row.image">
                 <q-img
                   width="50px"
-                  :src="`/images/products/${props.row.image}`"
+                  :src="`${api}/assets/images/products/${props.row.image}`"
                   class="tw-rounded-md"
+                  v-if="props.row.image"
+                />
+                <q-img
+                  width="50px"
+                  src="~assets/images/placeholder.png"
+                  class="tw-rounded-md"
+                  v-else
                 />
               </td>
               <td class="tw-uppercase">
@@ -142,6 +228,13 @@ function deleteProduct(id: number) {
               <td class="tw-font-mono">
                 <span
                   v-money="props.row.unit_price"
+                  class="tw-text-base"
+                ></span>
+              </td>
+
+              <td class="tw-font-mono">
+                <span
+                  v-money="props.row.market_price"
                   class="tw-text-base"
                 ></span>
               </td>
@@ -163,6 +256,7 @@ function deleteProduct(id: number) {
                       flat
                       size="md"
                       color="green-14"
+                      @click="updateProductImgae(props.row.id, 'open')"
                     />
                     <q-btn
                       icon="delete"
@@ -182,5 +276,12 @@ function deleteProduct(id: number) {
     </q-card>
 
     <edit-product-dialog :product-id="product_to_edit_id" v-if="showEdit" />
+
+    <product-image-dialog
+      v-if="showPrImageUploader"
+      :prId="prImageToEdit"
+      @close-success="dismissImageEditDialogWithSuccess"
+      @close="()=>showPrImageUploader = false"
+    />
   </div>
 </template>

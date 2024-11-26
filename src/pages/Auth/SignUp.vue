@@ -4,6 +4,7 @@ import { inject, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 
+
 const router = useRouter();
 const $q = useQuasar();
 const api = inject('api');
@@ -22,33 +23,39 @@ const signinUser = async () => {
     inProgress.value = true; // show loading icon on button while submiting
     validate(); // trim username and convert all alphabet to lower case
 
-    let req = await fetch(`${api}/api/auth/login`, {
+    let req = await fetch(`${api}/auth/`, {
       method: 'POST',
       body: JSON.stringify(user),
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
     let res = await req.json();
 
     if (res.status) {
-      $q.localStorage.setItem('authorisation-key', res.auth_key);
+      $q.sessionStorage.setItem('authorisation-key', res.auth_key);
       return router.push('/');
     } else {
       $q.notify({
-        message: 'Signin unsuccessfull',
-        caption: res.msg,
+        message: res.msg,
         icon: 'report_problem',
-        color: 'warning',
+        color: 'red-13',
       });
     }
     inProgress.value = false;
     return false;
+
   } catch (error: any) {
+    console.log(error)
     $q.notify({
-      message: 'Error occured signin in',
-      caption: error,
+      message: 'unknown error, please try again.',
       icon: 'report_problem',
       color: 'red-9',
+      timeout: 3000,
     });
+
     inProgress.value = false;
     return false;
   }
@@ -56,7 +63,7 @@ const signinUser = async () => {
 </script>
 <template>
   <div class="fullscreen row items-center justify-center">
-    <q-card id="main" square>
+    <q-card id="main" square flat>
       <q-card-section>
         <div class="text-h4 text-center text-uppercase">Signin here</div>
       </q-card-section>
@@ -67,17 +74,23 @@ const signinUser = async () => {
             standout
             v-model="user.username"
             color="accent"
+            :rules="[(val) => val !== '' || 'field cannot be blank']"
           />
 
           <q-input
             type="password"
             label="Password"
+            required
             standout
             v-model="user.password"
             color="accent"
+            :rules="[
+              (val) =>
+                val.length > 6 || 'password must be 6 or more characters long',
+            ]"
           />
-          <q-btn class="" :loading="inProgress" type="submit"
-            >Login to Management</q-btn
+          <q-btn class="" color="accent" :loading="inProgress" type="submit"
+            >Login</q-btn
           >
         </q-form>
       </q-card-section>

@@ -31,51 +31,39 @@ async function resetPassword() {
   isUpdatingPassword.value = true;
   try {
     const res = await (
-      await fetch(`${api}/api/auth/resetPassword`, {
+      await fetch(`${api}/auth/update/psw`, {
         method: 'post',
         body: JSON.stringify(user),
         headers: {
-          'auth-key': $q.localStorage.getItem('authorisation-key') || '',
+          authKey: $q.sessionStorage.getItem('authorisation-key') || '',
+          'Content-Type': 'application/json',
         },
       })
     ).json();
+
     if (res.status) {
       $q.notify({
-        iconColor: 'green-12',
-        color: 'dark',
+        color: 'green-14',
         message: 'updated successfully',
-        icon: 'check',
-        textColor: 'green-1',
+        icon: 'check_circle',
       });
       (user.old_pass = ''), (user.password = ''), (confirm.value = '');
       return (isUpdatingPassword.value = false);
     }
-    if (!res.status && res.code === 'password_missmatch') {
-      isUpdatingPassword.value = false;
-      return $q.notify({
-        color: 'dark',
-        icon: 'warning',
-        iconColor: 'warning',
-        message: 'your password is incorrect',
-        textColor: 'warning',
-      });
-    }
+
     isUpdatingPassword.value = false;
     return $q.notify({
-      color: 'dark',
+      color: 'red-14',
       icon: 'error',
-      iconColor: 'red-12',
-      message: 'unknown error',
-      textColor: 'red-1',
+      message: res.msg,
     });
-  } catch (error) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     isUpdatingPassword.value = false;
     return $q.notify({
-      color: 'dark',
+      color: 'red-14',
       icon: 'error',
-      iconColor: 'red-12',
-      message: 'unknown error',
-      textColor: 'red-1',
+      message: error.message,
     });
   }
 }

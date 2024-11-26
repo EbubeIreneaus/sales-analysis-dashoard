@@ -28,8 +28,8 @@ async function updateUserDetails() {
       await fetch(`${api}/api/auth/updateDetails`, {
         method: 'POST',
         body: JSON.stringify({
-          first_name: user.value.first_name,
-          last_name: user.value.last_name,
+          firstname: user.value.firstname,
+          lastname: user.value.lastname,
           email: user.value.email,
         }),
         headers: {
@@ -79,12 +79,11 @@ async function saveImage() {
 
   try {
     const res = await (
-      await fetch(`${api}/api/auth/updateProfilePics`, {
+      await fetch(`${api}/auth/updateProfilepics`, {
         method: 'post',
         body: form,
         headers: {
-          // 'Content-Type': 'multipart/form-data',
-          'auth-key': $q.localStorage.getItem('authorisation-key') || '',
+          'authKey': $q.sessionStorage.getItem('authorisation-key') || '',
         },
       })
     ).json();
@@ -130,8 +129,8 @@ async function saveImage() {
           v-if="img_prev"
           class="tw-h-[120px] tw-w-[120px] tw-rounded-lg tw-object-cover tw-object-center"
         />
-        <q-img
-          :src="api + '' + user.profile_pics || '/images/placeholder-1.png'"
+        <img
+          :src="user.profile_pics ? `${api}/assets/images/users/${user.profile_pics}`:'/images/placeholder-1.png'"
           v-else
           class="tw-h-[120px] tw-w-[120px] tw-rounded-lg tw-object-cover tw-object-center"
         />
@@ -163,24 +162,19 @@ async function saveImage() {
     <q-form @submit.prevent="updateUserDetails">
       <div class="tw-grid lg:tw-grid-cols-2 tw-grid-cols-1 tw-gap-x-10 tw-gap-y-7">
         <q-input
-          v-model="user.first_name"
+          v-model="user.firstname"
           label="Firstname"
           standout="bg-dark"
           input-class="text-white"
           required
+          readonly
         />
         <q-input
-          v-model="user.last_name"
+          v-model="user.lastname"
           label="Lastname"
           standout="bg-dark"
           input-class="text-white"
           required
-        />
-        <q-input
-          v-model="user.username"
-          label="Username"
-          standout="bg-dark"
-          input-class="text-white"
           readonly
         />
         <q-input
@@ -190,22 +184,31 @@ async function saveImage() {
           standout="bg-dark"
           input-class="text-white"
           required
+          readonly
+          class="tw-col-span-2"
         />
-        <q-select
-          v-model="user.department"
-          label="Department"
-          :options="['Sales', 'IT', 'HR', 'Management', 'Security']"
+        <q-input
+          v-model="user.username"
+          label="Username"
           standout="bg-dark"
           input-class="text-white"
           readonly
         />
-        <q-select
-          v-model="user.role"
-          label="Role"
-          :options="['Head', 'Secetary', 'Advicor', 'Staff', 'Intern']"
+
+        <q-input
+          :model-value="new Date(user.joined).toDateString()"
+          label="Date Joined"
           standout="bg-dark"
           input-class="text-white"
           readonly
+        />
+        <q-checkbox
+          v-model="user.admin"
+          label="Administrative Priviledge"
+          color="accent"
+          standout="bg-dark"
+          input-class="text-white"
+          disable
         />
       </div>
       <div>
@@ -214,6 +217,7 @@ async function saveImage() {
           label="save changes"
           class="tw-px-12 tw-py-2.5 tw-mt-14 bg-accent"
           :loading="isUpdatingUser ? true : false"
+          disable
         />
       </div>
     </q-form>

@@ -1,16 +1,217 @@
 <template>
-  <q-card class="q-py-md text-accent tw-h-[400px] md:tw-h-full" flat >
+  <q-card class="q-py-sm text-accent tw-h-[400px] md:tw-h-full" flat>
+    <div class="">
+      <q-select
+        v-model="dataBy"
+        :options="['days', 'months']"
+        filled
+        dense
+        flat
+        borderless
+        class="tw-w-fit tw-mx-3"
+      >
+        <template v-slot:prepend>
+          <small class="tw-text-sm tw-capitalize">analyse by: </small>
+        </template>
+      </q-select>
+    </div>
     <apexchart
       type="line"
       :options="options"
       :series="series"
-      height="100%"
+      height="90%"
     ></apexchart>
   </q-card>
 </template>
 
 <script setup>
 import { colors, useQuasar } from 'quasar';
+import { usesalesStore } from 'src/stores/sales';
+import { useExpenseStore } from 'src/stores/expenses';
+import { ref, computed } from 'vue';
+const dataBy = ref('days');
+import moment, { max } from 'moment';
+const sales = computed(() => usesalesStore().sales);
+const expense = computed(() => useExpenseStore().Expenses);
+
+const today = new Date();
+// sevenDaysAgo.setDate(new Date().getDate() - 7);
+
+const filteredSales = computed(() => {
+  const f_sales = sales.value.filter((sale) => {
+    const sold_date = new Date(sale.createdAt);
+
+    if (dataBy.value == 'days') {
+      return (
+        moment(today).week() == moment(sold_date).week() &&
+        today.getMonth() == sold_date.getMonth() &&
+        today.getFullYear() == sold_date.getFullYear()
+      );
+    } else {
+      return (
+        today.getMonth() == sold_date.getMonth() &&
+        today.getFullYear() == sold_date.getFullYear()
+      );
+    }
+  });
+  return f_sales;
+});
+
+const filteredExpenses = computed(() => {
+  const f_expense = expense.value.filter((expense) => {
+    const expense_date = new Date(expense.createdAt);
+    return dataBy.value == 'days'
+      ? moment(today).week() == moment(expense.createdAt).week() &&
+          today.getMonth() == expense_date.getMonth() &&
+          today.getFullYear() == expense_date.getFullYear()
+      : today.getMonth() == expense_date.getMonth() &&
+          today.getFullYear() == expense_date.getFullYear();
+  });
+  return f_expense;
+});
+
+const revenueSeries = computed(() => {
+  if (dataBy.value == 'days') {
+    const series = [
+      { x: 'Sun', y: 0 },
+      { x: 'Mon', y: 0 },
+      { x: 'Tue', y: 0 },
+      { x: 'Wed', y: 0 },
+      { x: 'Thu', y: 0 },
+      { x: 'Fri', y: 0 },
+      { x: 'Sat', y: 0 },
+    ];
+    console.log(filteredSales.value);
+    filteredSales.value.forEach((sale) => {
+      const day = new Date(sale.createdAt).getDay();
+      return (series[day].y += parseInt(sale.amount));
+    });
+    return series;
+  } else {
+    const series = [
+      { x: 'Jan', y: 0 },
+      { x: 'Feb', y: 0 },
+      { x: 'Mar', y: 0 },
+      { x: 'Apr', y: 0 },
+      { x: 'May', y: 0 },
+      { x: 'Jun', y: 0 },
+      { x: 'Jul', y: 0 },
+      { x: 'Aug', y: 0 },
+      { x: 'Sep', y: 0 },
+      { x: 'Oct', y: 0 },
+      { x: 'Nov', y: 0 },
+      { x: 'Dec', y: 0 },
+    ];
+    console.log(filteredSales.value);
+    filteredSales.value.forEach((sale) => {
+      const month = new Date(sale.createdAt).getMonth();
+      return (series[month].y += parseInt(sale.amount));
+    });
+    return series;
+  }
+});
+
+const expenseSeries = computed(() => {
+  if (dataBy.value == 'days') {
+    const series = [
+      { x: 'Sun', y: 0 },
+      { x: 'Mon', y: 0 },
+      { x: 'Tue', y: 0 },
+      { x: 'Wed', y: 0 },
+      { x: 'Thu', y: 0 },
+      { x: 'Fri', y: 0 },
+      { x: 'Sat', y: 0 },
+    ];
+
+    filteredExpenses.value.forEach((expense) => {
+      const day = new Date(expense.createdAt).getDay();
+      return (series[day].y += parseInt(expense.amount));
+    });
+    return series;
+  } else {
+    const series = [
+      { x: 'Jan', y: 0 },
+      { x: 'Feb', y: 0 },
+      { x: 'Mar', y: 0 },
+      { x: 'Apr', y: 0 },
+      { x: 'May', y: 0 },
+      { x: 'Jun', y: 0 },
+      { x: 'Jul', y: 0 },
+      { x: 'Aug', y: 0 },
+      { x: 'Sep', y: 0 },
+      { x: 'Oct', y: 0 },
+      { x: 'Nov', y: 0 },
+      { x: 'Dec', y: 0 },
+    ];
+
+    filteredExpenses.value.forEach((expense) => {
+      const month = new Date(expense.createdAt).getMonth();
+      return (series[month].y += parseInt(expense.amount));
+    });
+    return series;
+  }
+});
+
+const profitSeries = computed(() => {
+  if (dataBy.value == 'days') {
+    const series = [
+      { x: 'Sun', y: 0 },
+      { x: 'Mon', y: 0 },
+      { x: 'Tue', y: 0 },
+      { x: 'Wed', y: 0 },
+      { x: 'Thu', y: 0 },
+      { x: 'Fri', y: 0 },
+      { x: 'Sat', y: 0 },
+    ];
+
+    filteredSales.value.forEach((sale) => {
+      const day = new Date(sale.createdAt).getDay();
+      const sp = sale.sold_products;
+      let profit = 0;
+      sp.forEach((spv) => {
+        const product_sold_amount = spv.amount;
+        const product_quantity_sold = spv.quantity;
+        const product_unit_price = spv.product.unit_price;
+        let this_product_profit =
+          product_sold_amount - product_unit_price * product_quantity_sold;
+        profit += this_product_profit;
+      });
+      return (series[day].y += parseInt(profit));
+    });
+    return series;
+  } else {
+    const series = [
+      { x: 'Jan', y: 0 },
+      { x: 'Feb', y: 0 },
+      { x: 'Mar', y: 0 },
+      { x: 'Apr', y: 0 },
+      { x: 'May', y: 0 },
+      { x: 'Jun', y: 0 },
+      { x: 'Jul', y: 0 },
+      { x: 'Aug', y: 0 },
+      { x: 'Sep', y: 0 },
+      { x: 'Oct', y: 0 },
+      { x: 'Nov', y: 0 },
+      { x: 'Dec', y: 0 },
+    ];
+    console.log(filteredSales.value);
+    filteredSales.value.forEach((sale) => {
+      const month = new Date(sale.createdAt).getMonth();
+      const sp = sale.sold_products;
+      let profit = 0;
+      sp.forEach((spv) => {
+        const product_sold_amount = spv.amount;
+        const product_quantity_sold = spv.quantity;
+        const product_unit_price = spv.product.unit_price;
+        let this_product_profit =
+          product_sold_amount - product_unit_price * product_quantity_sold;
+        profit += this_product_profit;
+      });
+      return (series[month].y += parseInt(profit));
+    });
+    return series;
+  }
+});
 
 let options = {
   title: {
@@ -43,59 +244,33 @@ let options = {
     show: false,
   },
   xaxis: {
-    labels:{
-      style:{
-        colors: '#9C27B0'
-      }
-    }
+
+    labels: {
+      style: {
+        colors: '#9C27B0',
+      },
+    },
   },
   yaxis: {
-    labels:{
-      style:{
-        colors: '#9C27B0'
-      }
-    }
+    labels: {
+      style: {
+        colors: '#9C27B0',
+      },
+    },
   },
 };
-let series = [
+let series = computed(() => [
   {
     name: 'Revenue',
-    data: [
-      { y: 30, x: '01/06/2024' },
-      { y: 40, x: '02/06/2024' },
-      { y: 45, x: '03/06/2024' },
-      { y: 50, x: '04/06/2024' },
-      { y: 49, x: '05/06/2024' },
-      { y: 60, x: '06/06/2024' },
-      { y: 70, x: '07/06/2024' },
-      { y: 91, x: '08/06/2024' },
-    ],
+    data: revenueSeries.value,
   },
   {
     name: 'Expenses',
-    data: [
-      { y: 40, x: '01/06/2024' },
-      { y: 30, x: '02/06/2024' },
-      { y: 25, x: '03/06/2024' },
-      { y: 60, x: '04/06/2024' },
-      { y: 49, x: '05/06/2024' },
-      { y: 78, x: '06/06/2024' },
-      { y: 70, x: '07/06/2024' },
-      { y: 50, x: '08/06/2024' },
-    ],
+    data: expenseSeries.value,
   },
   {
     name: 'Profit',
-    data: [
-      { y: 70, x: '01/06/2024' },
-      { y: 50, x: '02/06/2024' },
-      { y: 75, x: '03/06/2024' },
-      { y: 65, x: '04/06/2024' },
-      { y: 39, x: '05/06/2024' },
-      { y: 78, x: '06/06/2024' },
-      { y: 40, x: '07/06/2024' },
-      { y: 60, x: '08/06/2024' },
-    ],
+    data: profitSeries.value
   },
-];
+]);
 </script>

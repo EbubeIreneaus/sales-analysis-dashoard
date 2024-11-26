@@ -1,13 +1,49 @@
+<script setup lang="ts">
+import { computed } from 'vue';
+import { usesalesStore } from 'src/stores/sales';
+import { SalesType } from 'src/types/SalesTypes';
+
+// const duration: Ref = inject('analysis_duration') as Ref;
+
+const totalSale = computed(() => {
+  const sales = usesalesStore().sales;
+  let filteredSales: SalesType[];
+  const today = new Date();
+
+  filteredSales = sales.filter((sale) => {
+    const sold_date = new Date(sale.createdAt);
+    return (
+      today.getFullYear() == sold_date.getFullYear() &&
+      today.getMonth() == sold_date.getMonth()
+    );
+  });
+
+  const amount = filteredSales.reduce(
+    (x, y) => x + parseInt(y.amount.toString()),
+    0
+  );
+  console.log(amount);
+
+  return amount;
+});
+</script>
 <template>
   <q-card class="card q-pa-sm relative-position" flat>
     <img src="src/assets/images/triangle-light.png" />
     <q-card-section>
       <span class="text-h6 text-title">Congratulation Ireanus</span>
-      <span class="text-subtitle block q-mb-md">Best seller of the month</span>
-      <span class="text-h5 text-accent">$42.86K</span>
+      <span class="text-subtitle block q-mb-md text-capitalize"
+        >Best seller of the Mnnth
+      </span>
+      <span class="text-h5 text-accent" v-money="totalSale"></span>
     </q-card-section>
     <q-card-actions>
-      <q-btn outlined color="accent" dense class="rounded-borders q-px-lg"
+      <q-btn
+        outlined
+        color="accent"
+        dense
+        class="rounded-borders q-px-lg"
+        to="/analysis"
         >view sales</q-btn
       >
     </q-card-actions>
@@ -21,9 +57,8 @@
   background-repeat: no-repeat;
   background-size: 75px;
   background-position: bottom 15px right 20px;
-
 }
-img{
+img {
   width: 130px;
   position: absolute;
   right: 0;

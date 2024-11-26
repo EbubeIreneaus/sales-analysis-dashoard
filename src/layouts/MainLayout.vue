@@ -1,10 +1,14 @@
 <template>
   <q-layout
-    view="lHh Lpr lFf"
+    view="hHh Lpr lFf"
     :class="$q.dark.isActive ? 'bg-dark' : 'bg-primary'"
   >
     <q-header
-      :class="$q.dark.isActive ? 'bg-dark' : 'bg-primary'"
+      :class="
+        $q.dark.isActive
+          ? 'bg-dark tw-text-white'
+          : 'bg-primary tw-text-black/50'
+      "
       class="q-py-sm"
     >
       <q-toolbar>
@@ -17,29 +21,42 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-input
+        <q-select
           :dark="$q.dark.isActive"
-          outlined
-          v-model="search"
+          v-model="analysis_duration"
+          borderless
           label-color="accent"
-          color="accent"
           class="q-ml-md"
           rounded
-          style="width: 300px"
           dense
+          flat
+          :options="analysis_duration_options"
+          option-label="label"
+          option-value="val"
+          emit-value
+          map-options
         >
           <template v-slot:prepend>
-            <q-icon name="search" color="accent" />
+            <span class="tw-text-sm">Duration:</span>
           </template>
-        </q-input>
+        </q-select>
 
         <q-space></q-space>
-        <q-btn icon="chat" flat color="accent" dark>
+        <!-- <q-btn icon="chat" flat color="accent" dark>
           <q-badge label="2" class="bg-accent" floating></q-badge>
-        </q-btn>
+        </q-btn> -->
 
-        <q-btn icon="notifications" color="accent" flat>
-          <q-badge label="3" class="bg-accent" floating></q-badge>
+        <q-btn
+          icon="notifications"
+          flat
+          @click="() => (openNotification = true)"
+        >
+          <q-badge
+            :label="useNotificationStore().unreadNotfication"
+            class="bg-accent"
+            floating
+            v-if="useNotificationStore().unreadNotfication > 0"
+          ></q-badge>
         </q-btn>
 
         <q-btn round class="q-mx-lg">
@@ -83,12 +100,12 @@
       :width="220"
     >
       <q-list>
-        <q-item class="row items-center q-my-xs" style="gap: 10px">
+        <!-- <q-item class="row items-center q-my-xs" style="gap: 10px">
           <q-avatar size="md">
             <img src="/icons/favicon-32x32.png" alt="" />
           </q-avatar>
           <span class="text-h6 text-accent">IRENEAUS</span>
-        </q-item>
+        </q-item> -->
 
         <q-list class="q-mb-lg">
           <EssentialLink
@@ -121,22 +138,71 @@
       </q-list>
     </q-drawer>
 
-    <q-page-container class=" q-py-md"  :class="$q.dark.isActive?'tw-bg-slate-950':'tw-bg-slate-200'">
+    <q-page-container
+      class="q-py-md"
+      :class="$q.dark.isActive ? 'tw-bg-slate-950' : 'tw-bg-slate-200'"
+    >
       <router-view class="tw-p-4" />
+      <NotificationDialog
+        v-if="openNotification"
+        :active="openNotification"
+        @close="() => (openNotification = false)"
+      />
     </q-page-container>
   </q-layout>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import {
+  defineAsyncComponent,
+  inject,
+  onBeforeMount,
+  onMounted,
+  provide,
+  ref,
+  watch,
+} from 'vue';
 import EssentialLink from 'components/EssentialLink.vue';
 import type { EssentialLinkProps } from 'components/EssentialLink.vue';
 import useDarkMode from 'src/composables/theme';
 import { useQuasar } from 'quasar';
+import { useProductStore } from 'src/stores/Products';
+import { usesalesStore } from 'src/stores/sales';
+import { useExpenseStore } from 'src/stores/expenses';
+import { useRouter } from 'vue-router';
+import { useNotificationStore } from 'src/stores/notification';
+import type { Notification } from 'src/types/Notificationtypes';
+
+const NotificationDialog = defineAsyncComponent(
+  () => import('src/components/Dialog/NotificationDialog.vue')
+);
 
 defineOptions({
   name: 'MainLayout',
 });
+const $q = useQuasar();
+const router = useRouter();
+const api = inject('api');
+
+let authKey = $q.sessionStorage.getItem('authorisation-key') ?? null;
+const analysis_duration_options = [
+  { label: 'Today', val: 'daily' },
+  { label: 'Last 7 Days', val: 'weekly' },
+  { label: 'This Month', val: 'monthly' },
+];
+const analysis_duration = ref('daily');
+
+provide('analysis_duration', analysis_duration)
+
+const notification = ref<Notification[]>([]);
+
+watch(
+  () => useNotificationStore().Notification,
+  () => {
+    notification.value = useNotificationStore().Notification;
+  }
+);
+const openNotification = ref(false);
 
 const firstLinkList: EssentialLinkProps[] = [
   { title: 'Dashboard', caption: 'dashboard', icon: 'dashboard', link: '/' },
@@ -165,8 +231,8 @@ const secondLinkList: EssentialLinkProps[] = [
 
 const thirdLinkList: EssentialLinkProps[] = [
   {
-    title: 'Admins',
-    caption: 'manage admins',
+    title: 'Users',
+    caption: 'manage users',
     icon: 'admin_panel_settings',
     link: '/admin',
   },
@@ -192,5 +258,56 @@ watch(darkMode, (newMode) => {
     useDarkMode(false);
   }
 });
-const search = ref('');
+
+onBeforeMount(() => {
+  if (!authKey) {
+    router.push('/auth');
+  }
+  
+});
+
+function startScoket() {
+  const socket = new WebSocket(
+    `${api}/ws?token=${encodeURIComponent(
+      $q.sessionStorage.getItem('authorisation-key') ?? new Date().getTime()
+    )}`
+  );
+  socket.onopen = () => console.log('Listening for connection');
+
+  socket.addEventListener('message', (event) => {
+    const data = JSON.parse(event.data);
+    console.log(data.msg);
+    if (data.msg) {
+      switch (data.msg) {
+        case 'new_sales_record':
+          usesalesStore().add(data.sale);
+          break;
+        case 'new_expense':
+          useExpenseStore().add(data.data);
+          break;
+        case 'new_product_added':
+          useProductStore().add(data.products);
+          break;
+        case 'product_deleted':
+          useProductStore().del(data.productId);
+          break;
+        case 'image_updated':
+          useProductStore().updateImg(data.productId, data.filename);
+          break;
+        case 'product_updated':
+          useProductStore().update(data.product);
+          break;
+        case 'notification':
+          useNotificationStore().add(data.data);
+          break;
+        default:
+          break;
+      }
+    }
+  });
+}
+
+onMounted(() => {
+  startScoket();
+});
 </script>

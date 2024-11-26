@@ -6,7 +6,8 @@ function moneyFmt(){
   return new Intl.NumberFormat('en-NG', {
     style: 'currency',
     currency: 'NGN',
-    maximumFractionDigits: 2
+    maximumFractionDigits: 1,
+    notation: 'compact'
   })
 }
 export default boot(async ({app}) => {

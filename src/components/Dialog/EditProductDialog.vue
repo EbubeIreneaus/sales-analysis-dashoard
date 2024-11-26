@@ -1,13 +1,14 @@
 <script lang="ts" setup>
 import { useProductStore } from 'src/stores/Products';
 import { useTimeout, useQuasar } from 'quasar';
-import { ref, reactive } from 'vue';
+import { ref, reactive, inject } from 'vue';
 const { registerTimeout } = useTimeout();
 
 const props = defineProps<{ productId: number }>();
 const is_processing = ref(false);
 const show = ref(true);
 const $q = useQuasar();
+const api = inject('api');
 
 let product = useProductStore().find(props.productId);
 
@@ -15,40 +16,64 @@ const form = reactive({
   name: product.name,
   unit_price: product.unit_price,
   quantity: product.quantity,
+  market_price: product.market_price,
   id: product.id,
-  has_error: false,
-  error_message: '',
 });
 
 function recordProducts() {
   const new_products = form;
   is_processing.value = true;
 
-  registerTimeout(() => {
-    useProductStore().update(new_products);
-    $q.notify({
-      message: 'Product updated successfully',
-      color: 'green-14',
-      icon: 'check_circle',
+  fetch(`${api}/products/updateProductData`, {
+    method: 'post',
+    body: JSON.stringify(new_products),
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      is_processing.value = false;
+      if (data.status) {
+        $q.notify({
+          message: 'Product updated successfully',
+          color: 'green-14',
+          icon: 'check_circle',
+        });
+        show.value = false;
+      } else {
+        $q.notify({
+          message: data.msg,
+          color: 'red-14',
+          icon: 'error',
+        });
+      }
+    })
+    .catch((err) => {
+      $q.notify({
+        message: err.message,
+        color: 'red-14',
+        icon: 'error',
+      });
     });
-    is_processing.value = false;
-    show.value = false;
-  }, 3000);
 }
 
-function monitorInput() {
-  const is_similar = useProductStore().product.find(
-    (pr) =>
-      pr.name.toLowerCase() === form.name.toLowerCase().trim() &&
-      form.name.toLowerCase().trim() !== product.name.toLowerCase()
-  );
-  if (is_similar) {
-    form.has_error = true;
-    form.error_message = 'similar product found';
-  } else {
-    form.has_error = false;
+const monitorInput = (val: string) => {
+  if (!val) {
+    return 'Field is required';
   }
-}
+  if (val.toLowerCase().trim() != product.name) {
+    let is_similar = useProductStore().product.some(
+      (pr) => pr.name == val.toLowerCase().trim()
+    );
+    if (is_similar) {
+      return 'similar product found';
+    }
+  }
+  return true;
+};
 </script>
 
 <template>
@@ -64,37 +89,38 @@ function monitorInput() {
       <q-form @submit.prevent="recordProducts">
         <q-card-section>
           <div class="tw-mb-5" v-auto-animate>
-            <div class="tw-grid tw-grid-cols-2 tw-gap-2 tw-mb-1.5">
-              <div class="tw-flex tw-gap-1 tw-items-center">
-                <q-input
-                  v-model="form.name"
-                  label="Product Name"
-                  dense
-                  borderless
-                  filled
-                  class="tw-w-full"
-                  input-class="product-name"
-                  :error="form.has_error"
-                  :error-message="form.error_message"
-                  @change="monitorInput()"
-                />
-              </div>
-              <div class="tw-flex tw-gap-2">
-                <q-input
-                  v-model="form.unit_price"
-                  label="Unit Price(NGN)"
-                  dense
-                  borderless
-                  filled
-                />
-                <q-input
-                  v-model="form.quantity"
-                  label="Quantity"
-                  dense
-                  borderless
-                  filled
-                />
-              </div>
+            <div class="tw-grid tw-grid-cols-3 tw-gap-x-2  tw-mb-5">
+              <q-input
+                v-model="form.name"
+                label="Product Name"
+                dense
+                borderless
+                filled
+                class="tw-col-span-3"
+                input-class="product-name"
+                :rules="[(val) => monitorInput(val)]"
+              />
+              <q-input
+                v-model="form.quantity"
+                label="Quantity"
+                dense
+                borderless
+                filled
+              />
+              <q-input
+                v-model="form.unit_price"
+                label="Unit Price(NGN)"
+                dense
+                borderless
+                filled
+              />
+              <q-input
+                v-model="form.market_price"
+                label="Market Price(NGN)"
+                dense
+                borderless
+                filled
+              />
             </div>
             <q-btn
               label="Record"
@@ -102,7 +128,6 @@ function monitorInput() {
               class="tw-inline-block tw-float-right tw-mx-3"
               type="submit"
               :loading="is_processing"
-              :disable="form.has_error"
             />
             <q-btn
               label="Close"

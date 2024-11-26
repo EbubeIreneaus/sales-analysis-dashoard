@@ -9,6 +9,7 @@ const routes: RouteRecordRaw[] = [
       {path: 'account', component: () => import('pages/AccountSettings.vue')},
       {path: 'product', component: () => import('pages/product/ProductPage.vue')},
       {path: 'analysis', component: () => import('pages/MarketAnalysis/AnalysisPage.vue')},
+      {path: 'admin', component: () => import('pages/Users/UserIndexPage.vue')}
     ],
   },
   {
@@ -16,6 +17,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('layouts/AuthLayout.vue'),
     children: [
       { path: '', component: () => import('src/pages/Auth/SignUp.vue') },
+      { path: 'logout', component: () => import('src/pages/Auth/logoutPage.vue') },
     ],
   },
 

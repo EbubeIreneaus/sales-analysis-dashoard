@@ -13,9 +13,11 @@ const user = ref(null);
 (async function () {
   try {
     const res = await (
-      await fetch(`${api}/api/auth/user`, {
+      await fetch(`${api}/auth/`, {
+        method: 'get',
+        credentials: 'same-origin',
         headers: {
-          'auth-key': $q.localStorage.getItem('authorisation-key') || 'invalid',
+          'authKey': $q.sessionStorage.getItem('authorisation-key') || 'invalid',
         },
       })
     ).json();

@@ -1,19 +1,19 @@
 <script lang="ts" setup>
 import { useProductStore } from 'src/stores/Products';
 import { useTimeout, useQuasar } from 'quasar';
-import { onMounted, ref } from 'vue';
+import { inject, onMounted, ref } from 'vue';
 const { registerTimeout } = useTimeout();
 
 const is_processing = ref(false);
 const show = ref(true);
-const $q = useQuasar()
+const $q = useQuasar();
+const api = inject('api');
 
 const productFormProps = {
   name: '',
-  unit_price: 0,
-  quantity: 0,
-  has_error: false,
-  error_message: '',
+  unit_price: null as unknown as number,
+  quantity: null as unknown as number,
+  market_price: null as unknown as number,
 };
 const form = ref<(typeof productFormProps)[]>([{ ...productFormProps }]);
 
@@ -24,20 +24,46 @@ function removeProductRow(index: number) {
   form.value.splice(index, 1);
 }
 
-function recordProducts() {
+async function recordProducts() {
   const new_products = form.value;
   is_processing.value = true;
 
-  registerTimeout(() => {
-    useProductStore().add(new_products);
-    $q.notify({
-      message: 'Product\'s recorded successfully',
-      color: 'green-14',
-      icon: 'check_circle'
+  fetch(`${api}/products/`, {
+    method: 'put',
+    body: JSON.stringify(new_products),
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+    },
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      is_processing.value = false;
+
+      if (data.status) {
+        show.value = false;
+        $q.notify({
+          message: "Product's recorded successfully",
+          color: 'green-14',
+          icon: 'check_circle',
+        });
+      } else {
+        $q.notify({
+          message: data.msg,
+          color: 'red-14',
+          icon: 'error',
+        });
+      }
     })
-    is_processing.value = false;
-    show.value = false;
-  }, 3000);
+    .catch((err) => {
+      is_processing.value = false;
+      $q.notify({
+        message: err.message,
+        color: 'red-14',
+        icon: 'error',
+      });
+    });
 }
 
 function monitorInput(index: number) {
@@ -46,10 +72,7 @@ function monitorInput(index: number) {
       pr.name.toLowerCase() === form.value[index].name.toLowerCase().trim()
   );
   if (is_similar) {
-    form.value[index].has_error = true;
-    form.value[index].error_message = 'similar product found';
   } else {
-    form.value[index].has_error = false;
   }
 }
 
@@ -76,52 +99,60 @@ onMounted(() => {
           />
         </div>
       </q-card-section>
+
       <q-form @submit.prevent="recordProducts">
         <q-card-section>
           <div class="tw-mb-5" v-auto-animate>
-            <div
-              class="tw-grid tw-grid-cols-2 tw-gap-2 tw-mb-1.5"
-              v-for="(_, index) in form"
-              :key="index"
-            >
-              <div class="tw-flex tw-gap-1 tw-items-center">
-                <q-btn
-                  icon="close"
-                  dense
-                  flat
-                  color="red-12"
-                  @click="removeProductRow(index)"
-                  :disable="form.length < 2"
-                  size="md"
-                />
-                <q-input
-                  v-model="form[index].name"
-                  label="Product Name"
-                  dense
-                  borderless
-                  filled
-                  class="tw-w-full"
-                  input-class="product-name"
-                  :error="form[index].has_error"
-                  :error-message="form[index].error_message"
-                  :oninput="monitorInput(index)"
-                />
-              </div>
-              <div class="tw-flex tw-gap-2">
-                <q-input
-                  v-model="form[index].unit_price"
-                  label="Unit Price(NGN)"
-                  dense
-                  borderless
-                  filled
-                />
-                <q-input
-                  v-model="form[index].quantity"
-                  label="Quantity"
-                  dense
-                  borderless
-                  filled
-                />
+            <div class="tw-mb-5">
+              <div
+                class=" tw-mb-3"
+                v-for="(_, index) in form"
+                :key="index"
+              >
+                <div class="tw-flex tw-items-center">
+                  <q-btn
+                    icon="close"
+                    dense
+                    flat
+                    color="red-12"
+                    @click="removeProductRow(index)"
+                    :disable="form.length < 2"
+                    size="md"
+                  />
+                  <div class="tw-grid tw-grid-cols-3 tw-gap-1 tw-items-center">
+                    <q-input
+                      v-model="form[index].name"
+                      label="Product Name"
+                      dense
+                      borderless
+                      filled
+                      class="tw-col-span-3"
+                      input-class="product-name"
+                      :oninput="monitorInput(index)"
+                    />
+                    <q-input
+                      v-model="form[index].quantity"
+                      label="Quantity"
+                      dense
+                      borderless
+                      filled
+                    />
+                    <q-input
+                      v-model="form[index].unit_price"
+                      label="Unit Price(NGN)"
+                      dense
+                      borderless
+                      filled
+                    />
+                    <q-input
+                      v-model="form[index].market_price"
+                      label="Market Price(NGN)"
+                      dense
+                      borderless
+                      filled
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             <q-btn
