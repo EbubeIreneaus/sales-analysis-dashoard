@@ -10,7 +10,7 @@ defineOptions({
   name: 'App'
 });
 
-const backend_url = process.env.DEV ? 'http://127.0.0.1:3000/api': 'https://sales-api-server.vercel.app/api'
+const backend_url = process.env.DEV ? 'http://127.0.0.1:3000/api': 'https://sales-admin-server.financial-growths.com/api'
 provide('api', backend_url)
 
 
