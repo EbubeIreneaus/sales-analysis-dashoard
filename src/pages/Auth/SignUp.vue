@@ -4,29 +4,28 @@ import { inject, reactive, ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 
-
 const router = useRouter();
+
 const $q = useQuasar();
+
 const api = inject('api');
+
 let inProgress = ref(false);
 
 const user = reactive({
   username: '',
   password: '',
 });
-function validate() {
-  user.username = user.username.trim().toString();
-}
 
 const signinUser = async () => {
   try {
-    inProgress.value = true; // show loading icon on button while submiting
-    validate(); // trim username and convert all alphabet to lower case
+    inProgress.value = true;
 
     let req = await fetch(`${api}/auth/`, {
       method: 'POST',
+
       body: JSON.stringify(user),
-      credentials: 'same-origin',
+
       headers: {
         'Content-Type': 'application/json',
       },
@@ -34,29 +33,41 @@ const signinUser = async () => {
 
     let res = await req.json();
 
-    if (res.status) {
-      $q.sessionStorage.setItem('authorisation-key', res.auth_key);
+    if (res.success) {
+      $q.cookies.set('adminAuthKey', res.token, {
+        path: '/',
+        expires: '12h',
+        secure: true,
+      });
+
       return router.push('/');
     } else {
       $q.notify({
         message: res.msg,
+        textColor: 'red-13',
         icon: 'report_problem',
-        color: 'red-13',
+        iconColor: 'red-13',
+        color: 'red-3',
       });
     }
-    inProgress.value = false;
-    return false;
 
+    inProgress.value = false;
+
+    return false;
   } catch (error: any) {
-    console.log(error)
+    console.log(error);
+
     $q.notify({
-      message: 'unknown error, please try again.',
+      message: error.message,
+      textColor: 'red-13',
       icon: 'report_problem',
-      color: 'red-9',
+      iconColor: 'red-13',
+      color: 'red-3',
       timeout: 3000,
     });
 
     inProgress.value = false;
+
     return false;
   }
 };
@@ -73,7 +84,7 @@ const signinUser = async () => {
             label="Username"
             standout
             v-model="user.username"
-            color="accent"
+            class="tw-px-2"
             :rules="[(val) => val !== '' || 'field cannot be blank']"
           />
 
@@ -83,7 +94,7 @@ const signinUser = async () => {
             required
             standout
             v-model="user.password"
-            color="accent"
+            class="tw-px-2"
             :rules="[
               (val) =>
                 val.length > 6 || 'password must be 6 or more characters long',

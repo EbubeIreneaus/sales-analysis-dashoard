@@ -17,7 +17,7 @@ const totalProduct = computed(() => {
 
 const totalSales = computed(() => {
   const sales = usesalesStore().sales;
-  const amount = sales.reduce((x, y) => x + parseInt(y.amount.toString()), 0);
+  const amount = sales.reduce((x, y) => x + parseInt(y.amount?.toString() || '0'), 0);
   return amount;
 });
 </script>
@@ -31,7 +31,7 @@ const totalSales = computed(() => {
             <div
               class="tw-col-span-1 tw-bg-slate-900/40 tw-rounded-lg tw-text-center tw-py-3"
             >
-              <q-icon name="inventory_2" size="xx-large" />
+              <q-icon name="inventory_2" size="xx-large" :color="$q.dark.isActive? '': 'white'"  />
             </div>
             <div class="tw-col-span-2 text-center">
               <h2 class="md:tw-text-4xl tw-text-3xl text-weight-bolder">
@@ -49,7 +49,7 @@ const totalSales = computed(() => {
             <div
               class="tw-col-span-1 tw-bg-slate-900/40 tw-rounded-lg tw-text-center tw-py-3"
             >
-              <q-icon name="money" size="xx-large" />
+              <q-icon name="money" size="xx-large" :color="$q.dark.isActive? '': 'white'"  />
             </div>
             <div class="tw-col-span-2 text-center">
               <h2 class="md:tw-text-3xl tw-text-2xl text-weight-bolder">
@@ -64,7 +64,7 @@ const totalSales = computed(() => {
     <div>
       <div class="">
         <q-btn
-          :color="$q.dark.isActive ? 'dark' : ''"
+          :color="$q.dark.isActive ? 'dark' : 'accent'"
           label="add new product"
           icon="add"
           class="tw-py-3 tw-mb-3 tw-block"
@@ -76,6 +76,6 @@ const totalSales = computed(() => {
       </div>
     </div>
 
-    <AddProductDialog v-if="request_add_new_product" />
+    <AddProductDialog v-if="request_add_new_product" @close="request_add_new_product = !request_add_new_product" />
   </q-page>
 </template>

@@ -35,7 +35,7 @@ async function resetPassword() {
         method: 'post',
         body: JSON.stringify(user),
         headers: {
-          authKey: $q.sessionStorage.getItem('authorisation-key') || '',
+          Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
           'Content-Type': 'application/json',
         },
       })
@@ -43,7 +43,9 @@ async function resetPassword() {
 
     if (res.status) {
       $q.notify({
-        color: 'green-14',
+        color: 'green-10',
+        textColor: 'white',
+        iconColor: 'white',
         message: 'updated successfully',
         icon: 'check_circle',
       });
@@ -53,16 +55,20 @@ async function resetPassword() {
 
     isUpdatingPassword.value = false;
     return $q.notify({
-      color: 'red-14',
-      icon: 'error',
+      textColor: 'red-14',
+      color: 'red-3',
+      iconColor: 'red-14',
+      icon: 'cancel',
       message: res.msg,
     });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     isUpdatingPassword.value = false;
     return $q.notify({
-      color: 'red-14',
-      icon: 'error',
+      textColor: 'red-14',
+      color: 'red-3',
+      iconColor: 'red-14',
+      icon: 'cancel',
       message: error.message,
     });
   }

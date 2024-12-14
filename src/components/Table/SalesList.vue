@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { inject, onMounted, ref, watch } from 'vue';
 import { usesalesStore } from 'src/stores/sales';
-const props = defineProps<{ page: 'home' | 'analysis' }>();
-import type { SalesType } from 'src/types/SalesTypes';
 import moment from 'moment';
-import { QTableColumn, useQuasar } from 'quasar';
-import type { ExpenseType } from 'src/types/ExpenseType';
+import { QTableColumn} from 'quasar';
 import { useExpenseStore } from 'src/stores/expenses';
+import { storeToRefs } from 'pinia';
 
-const sales = ref<SalesType[]>(usesalesStore().sales);
-const expenses = ref<ExpenseType[]>(useExpenseStore().Expenses);
+const SalesStore = usesalesStore()
+const ExpensStore = useExpenseStore()
+// const props = defineProps<{ page: 'home' | 'analysis' }>();
 
-// const api = inject('api');
-// const $q = useQuasar();
+const {sales} = storeToRefs(SalesStore)
+const {Expenses: expenses} = storeToRefs(ExpensStore)
+
 
 const salesTableColumn: QTableColumn[] = [
   { name: 'salesId', label: 'ORDER ID', field: 'salesId', align: 'left' },
@@ -64,7 +63,6 @@ const salesTableColumn: QTableColumn[] = [
 ];
 
 const expenseTableColumn: QTableColumn[] = [
-  // {name: 'id', field: 'id', label: 'Expense Id', align: 'left'},
   {name: 'category', field: 'category', label: 'Category', align: 'left', sortable: true},
   {name: 'user', label: 'Recorded By', field: 'user.username', align: 'left' },
   {name: 'admin', label: 'Admin', field: 'admin', align: 'left', sortable: true},
@@ -72,42 +70,8 @@ const expenseTableColumn: QTableColumn[] = [
   {name: 'desc', label: 'Description', field: 'desc', align: 'left' },
   {name: 'date', label: 'Date', field: 'createdAt', sortable: true, align: 'left'},
 ]
-watch(
-  () => usesalesStore().sales,
-  () => {
-    sales.value = usesalesStore().sales;
-  }
-);
 
-watch(
-  () => useExpenseStore().Expenses,
-  () => {
-    expenses.value = useExpenseStore().Expenses;
-  }
-);
 
-onMounted(() => {
-  // const socket = new WebSocket(
-  //   `${api}/sales/ws?token=${encodeURIComponent(
-  //     $q.sessionStorage.getItem('authorisation-key') ?? new Date().getTime()
-  //   )}`
-  // );
-  // socket.addEventListener('message', (event) => {
-  //   const data = JSON.parse(event.data);
-  //   if (data.msg) {
-  //     switch (data.msg) {
-  //       case 'new_sales_record':
-  //         usesalesStore().add(data.products, data.sale);
-  //         break;
-  //       default:
-  //         break;
-  //     }
-  //   }
-  // });
-  // socket.onopen = () => {
-  //   console.log('sales socket opened');
-  // };
-});
 </script>
 
 <template>
@@ -117,12 +81,12 @@ onMounted(() => {
         <tr :props="props">
           <td>{{ props.row.salesId }}</td>
 
-          <td><p class="text-capitalize">{{ props.row.user.username }}</p></td>
+          <td><p class="text-capitalize">{{ props.row?.user?.username || props.row?.user?.firstname || 'Nill' }}</p></td>
 
-          <td v-if="props.row.user.staff"><q-icon name="check_circle" color="green-14" /></td>
+          <td v-if="props.row?.user?.staff"><q-icon name="check_circle" color="green-14" /></td>
           <td v-else><q-icon name="cancel" color="red-14" /></td>
 
-          <td><p v-money="props.row.amount"></p></td>
+          <td><p v-money="props.row.amount || 0"></p></td>
 
           <td v-if="props.row.website"><q-icon name="check_circle" color="green-14" /></td>
           <td v-else><q-icon name="cancel" color="red-13" /></td>

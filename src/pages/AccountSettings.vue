@@ -15,9 +15,8 @@ const user = ref(null);
     const res = await (
       await fetch(`${api}/auth/`, {
         method: 'get',
-        credentials: 'same-origin',
         headers: {
-          'authKey': $q.sessionStorage.getItem('authorisation-key') || 'invalid',
+          Authorization : `Bearer ${$q.cookies.get('adminAuthKey')}`,
         },
       })
     ).json();

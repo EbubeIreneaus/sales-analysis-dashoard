@@ -1,6 +1,7 @@
+<!-- eslint-disable @typescript-eslint/no-explicit-any -->
 <script lang="ts" setup>
-import { computed, defineAsyncComponent, inject, onMounted, ref } from 'vue';
-import { QTableColumn, useQuasar } from 'quasar';
+import {  defineAsyncComponent, inject, onMounted, ref } from 'vue';
+import { useQuasar } from 'quasar';
 import { Person } from 'src/types/UserTypes';
 const NewUserDialog = defineAsyncComponent(
   () => import('src/components/Dialog/NewUserDialog.vue')
@@ -14,16 +15,16 @@ interface UsersType extends Person {
 const add_new_user = ref(false);
 const api = inject('api');
 const $q = useQuasar();
-let authKey = $q.sessionStorage.getItem('authorisation-key') as string;
+let authKey = $q.cookies.get('adminAuthKey');
 const users = ref<UsersType[]>([]);
-const me = ref<UsersType>();
+const me = ref<UsersType>(null as unknown as UsersType);
+const isGettingUser = ref(true)
 
 function getAllUser() {
   fetch(`${api}/users/all`, {
     method: 'get',
-    credentials: 'same-origin',
     headers: {
-      authKey: authKey,
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
@@ -35,52 +36,18 @@ function getAllUser() {
     })
     .catch((err) => {
       console.log(err.message);
-    });
+    }).finally(() => isGettingUser.value = false);
 }
 
-const userTableColumn: QTableColumn[] = [
-  {
-    name: 'fullname',
-    field: '',
-    label: 'Fullname',
-    sortable: true,
-    align: 'left',
-  },
-  {
-    name: 'username',
-    field: 'username',
-    label: 'Username',
-    sortable: true,
-    align: 'left',
-  },
-  { name: 'email', field: 'email', label: 'Email', align: 'left' },
-  { name: 'role', field: 'Role', label: 'Role', align: 'left' },
-  {
-    name: 'admin',
-    field: 'is_admin',
-    label: 'Admin',
-    sortable: true,
-    align: 'left',
-  },
-  {
-    name: 'active',
-    field: 'is_active',
-    label: 'Active',
-    sortable: true,
-    align: 'left',
-  },
-];
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function makeAdmin(event: any, userId: string) {
-  event.target.disabled = true
   fetch(`${api}/auth/makeAdmin`, {
     method: 'post',
     body: JSON.stringify({ staffId: userId }),
     credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: authKey,
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
@@ -89,26 +56,32 @@ function makeAdmin(event: any, userId: string) {
         $q.notify({
           message: 'successful',
           icon: 'check_circle',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white'
         });
         return getAllUser();
       }
       $q.notify({
         message: data.msg,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     })
     .catch((err) => {
       $q.notify({
         message: err.message,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function removeAdmin(event: any, userId: string) {
   event.target.disabled = true;
   fetch(`${api}/auth/removeAdmin`, {
@@ -117,7 +90,7 @@ function removeAdmin(event: any, userId: string) {
     credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: authKey,
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
@@ -127,27 +100,34 @@ function removeAdmin(event: any, userId: string) {
         $q.notify({
           message: 'successful',
           icon: 'check_circle',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white'
         });
         return getAllUser();
       }
       $q.notify({
         message: data.msg,
-        icon: 'error',
-        color: 'red-14',
-      });
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
     })
+
+  })
     .catch((err) => {
       event.target.disabled = false;
       $q.notify({
         message: err.message,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 function deactivateUser(event: any, userId: string) {
   event.target.disabled = true;
   fetch(`${api}/auth/deactivate`, {
@@ -156,7 +136,7 @@ function deactivateUser(event: any, userId: string) {
     credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: authKey,
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
@@ -166,27 +146,32 @@ function deactivateUser(event: any, userId: string) {
         $q.notify({
           message: 'successful',
           icon: 'check_circle',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white'
         });
         return getAllUser();
       }
       $q.notify({
         message: data.msg,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     })
     .catch((err) => {
       event.target.disabled = false;
       $q.notify({
         message: err.message,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function activateUser(event: any, userId: string) {
   event.target.disabled = true;
   fetch(`${api}/auth/activate`, {
@@ -195,7 +180,7 @@ function activateUser(event: any, userId: string) {
     credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: authKey,
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
@@ -205,22 +190,28 @@ function activateUser(event: any, userId: string) {
         $q.notify({
           message: 'successful',
           icon: 'check_circle',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white'
         });
         return getAllUser();
       }
       $q.notify({
         message: data.msg,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     })
     .catch((err) => {
       event.target.disabled = false;
       $q.notify({
         message: err.message,
-        icon: 'error',
-        color: 'red-14',
+        icon: 'cancel',
+        color: 'red-3',
+        textColor: 'red-14',
+        iconColor: 'red-14'
       });
     });
 }
@@ -231,13 +222,24 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="tw-min-h-dvh">
+  <div class="tw-min-h-dvh ">
     <div class="tw-px-3">
+
+      <div v-if="isGettingUser">
+        <div class="tw-border tw-grid tw-place-content-center tw-h-dvh">
+          <div>
+            <q-icon name="hourglass_bottom" size="xl" class="tw-animate-spin" color="accent" />
+          </div>
+        </div>
+      </div>
+
       <div
         class="tw-grid lg:tw-grid-cols-3 sm:tw-grid-cols-2 tw-grid-cols-1 tw-gap-5"
+        v-else
       >
         <div
           class="tw-bg-white tw-shadow-lg tw-rounded-lg tw-overflow-hidden tw-border tw-border-gray-200"
+          
         >
           <!-- Profile Picture -->
           <div
@@ -263,7 +265,7 @@ onMounted(() => {
             </h2>
             <p class="tw-text-sm tw-text-gray-600">{{ me?.email }}</p>
             <p class="tw-text-sm tw-text-gray-600">
-              {{ me?.username }} - {{ me?.staff?'staff':'client' }}
+              {{ me?.username }} - {{ me?.staff ? 'staff' : 'client' }}
             </p>
 
             <div class="tw-mt-2">
@@ -320,7 +322,7 @@ onMounted(() => {
             </h2>
             <p class="tw-text-sm tw-text-gray-600">{{ user?.email }}</p>
             <p class="tw-text-sm tw-text-gray-600">
-              {{ user?.username }} - {{ user?.staff?'staff':'clent' }}
+              {{ user?.username }} - {{ user?.staff ? 'staff' : 'clent' }}
             </p>
 
             <div class="tw-mt-2">
@@ -368,7 +370,7 @@ onMounted(() => {
                 </q-btn>
               </div>
             </div>
-            
+
             <q-btn
               class="tw-bg-red-500 tw-text-white tw-px-4 tw-py-2 tw-rounded-lg hover:tw-bg-red-600 focus:tw-outline-none"
               v-if="user.active"

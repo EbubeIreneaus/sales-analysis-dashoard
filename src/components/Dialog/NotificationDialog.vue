@@ -7,15 +7,16 @@ import { useQuasar } from 'quasar';
 import { inject, onMounted } from 'vue';
 
 const api = inject('api');
+
 const $q = useQuasar();
-const authKey = $q.sessionStorage.getItem('authorisation-key');
+
 
 onMounted(() => {
   fetch(`${api}/notification/viewed`, {
     method: 'post',
-    credentials: 'omit',
+
     headers: {
-      authKey: authKey?.toString() ?? '',
+      Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
     },
   })
     .then((res) => res.json())
@@ -53,9 +54,9 @@ onMounted(() => {
               moment(nt.createdAt).fromNow()
             }}</q-item-label>
           </q-item-section>
-          <q-item-section side v-if="!nt.viewers.includes(authKey as string)">
+          <!-- <q-item-section side v-if="!nt.viewers.includes(authKey as string)">
             <q-chip color="green-14" dense size="sm">unread</q-chip>
-          </q-item-section>
+          </q-item-section> -->
         </q-item>
       </q-list>
     </div>

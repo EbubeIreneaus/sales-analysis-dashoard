@@ -3,15 +3,12 @@ import OverviewChart from 'src/components/Charts/OverviewChart.vue';
 import MiniCards from 'src/components/Card/MiniCards.vue';
 import SalesList from 'src/components/Table/SalesList.vue';
 import { defineAsyncComponent, ref } from 'vue';
-import { usesalesStore } from 'src/stores/sales';
 
 const RecordSalesDialog = defineAsyncComponent(
   () => import('src/components/Dialog/RecordSalesDialog.vue')
 );
 
 const RecordExpenseDialog = defineAsyncComponent(() => import('src/components/Dialog/RecordExpenseDialog.vue'))
-
-const { sales } = usesalesStore();
 
 const showRecordSalesDialog = ref(false)
 const showRecordExpenseDialog = ref(false)

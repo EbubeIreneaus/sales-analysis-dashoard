@@ -27,26 +27,28 @@ function recordProducts() {
   fetch(`${api}/products/updateProductData`, {
     method: 'post',
     body: JSON.stringify(new_products),
-    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+      Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`
     },
   })
     .then((res) => res.json())
     .then((data) => {
-      is_processing.value = false;
       if (data.status) {
         $q.notify({
           message: 'Product updated successfully',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white',
           icon: 'check_circle',
         });
         show.value = false;
       } else {
         $q.notify({
           message: data.msg,
-          color: 'red-14',
+          textColor: 'red-14',
+          color: 'red-3',
+          iconColor: 'red-14',
           icon: 'error',
         });
       }
@@ -54,10 +56,12 @@ function recordProducts() {
     .catch((err) => {
       $q.notify({
         message: err.message,
-        color: 'red-14',
+        textColor: 'red-14',
+          color: 'red-3',
+          iconColor: 'red-14',
         icon: 'error',
       });
-    });
+    }).finally(() => is_processing.value = false);
 }
 
 const monitorInput = (val: string) => {

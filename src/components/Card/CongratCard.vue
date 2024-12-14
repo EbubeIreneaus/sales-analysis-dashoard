@@ -2,27 +2,28 @@
 import { computed } from 'vue';
 import { usesalesStore } from 'src/stores/sales';
 import { SalesType } from 'src/types/SalesTypes';
+import { storeToRefs } from 'pinia';
 
 // const duration: Ref = inject('analysis_duration') as Ref;
+const SalesStore = usesalesStore()
 
 const totalSale = computed(() => {
-  const sales = usesalesStore().sales;
+  const {sales} = storeToRefs(SalesStore)
   let filteredSales: SalesType[];
   const today = new Date();
 
-  filteredSales = sales.filter((sale) => {
+  filteredSales = sales.value.filter((sale) => {
     const sold_date = new Date(sale.createdAt);
     return (
       today.getFullYear() == sold_date.getFullYear() &&
       today.getMonth() == sold_date.getMonth()
     );
   });
-
+  
   const amount = filteredSales.reduce(
-    (x, y) => x + parseInt(y.amount.toString()),
+    (x, y) => x + parseInt(y.amount?.toString() || '0'),
     0
   );
-  console.log(amount);
 
   return amount;
 });

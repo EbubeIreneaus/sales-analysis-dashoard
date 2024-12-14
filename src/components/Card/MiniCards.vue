@@ -2,13 +2,13 @@
 import { computed } from 'vue';
 import { usesalesStore } from 'src/stores/sales';
 import { useExpenseStore } from 'src/stores/expenses';
-// import { SalesType } from 'src/types/SalesTypes';
-// import type { ExpenseType } from 'src/types/ExpenseType';
+import { storeToRefs } from 'pinia';
 
-// const duration: Ref = inject('analysis_duration') as Ref;
-const sales = computed(() => usesalesStore().sales);
-const expense = computed(() => useExpenseStore().Expenses);
+const SalesStore = usesalesStore()
+const ExpensesStore = useExpenseStore()
 
+const {sales} = storeToRefs(SalesStore)
+const {Expenses: expense} = storeToRefs(ExpensesStore)
 const today = new Date();
 // sevenDaysAgo.setDate(new Date().getDate() - 7);
 
@@ -38,7 +38,7 @@ const filteredExpenses = computed(() => {
 
 const todaySales = computed(() => {
   const amount = filteredSales.value.reduce(
-    (x, y) => x + parseInt(y.amount.toString()),
+    (x, y) => x + parseInt(y.amount?.toString() || '0'),
     0
   );
   return amount;
@@ -51,7 +51,7 @@ const todayCustomer = computed(() => {
 
 const todayExpense = computed(() => {
   return filteredExpenses.value.reduce(
-    (x, y) => x + parseInt(y.amount.toString()),
+    (x, y) => x + parseInt(y.amount?.toString() || '0'),
     0
   );
 });

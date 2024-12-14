@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { useProductStore } from 'src/stores/Products';
-import { useTimeout, useQuasar } from 'quasar';
+import { useQuasar } from 'quasar';
 import { inject, reactive, ref } from 'vue';
 
 const is_processing = ref(false);
@@ -9,7 +9,7 @@ const $q = useQuasar();
 const products = ref(useProductStore().product);
 const api = inject('api');
 const emit = defineEmits(['close']);
-const authKey = $q.sessionStorage.getItem('authorisation-key') as string
+const authKey = $q.cookies.get('adminAuthKey');
 
 const productFormProps = {
   productId: null,
@@ -19,8 +19,8 @@ const productFormProps = {
 const salesForm = reactive({
   paid: true,
   cash: true,
-  website: false
-})
+  website: false,
+});
 const form = ref<(typeof productFormProps)[]>([{ ...productFormProps }]);
 
 function incrementProductRow() {
@@ -33,41 +33,46 @@ function removeProductRow(index: number) {
 function recordSales() {
   const new_products = form.value;
   is_processing.value = true;
+
   fetch(`${api}/sales/`, {
     method: 'put',
-    body: JSON.stringify({sale: salesForm, new_products}),
-    credentials: 'same-origin',
+    body: JSON.stringify({ sale: salesForm, new_products }),
     headers: {
       'Content-Type': 'application/json',
-        authkey: authKey
+      Authorization: `Bearer ${authKey}`,
     },
   })
     .then((res) => res.json())
     .then((data) => {
-      is_processing.value = false;
       if (data.status) {
         $q.notify({
           message: "Sales's recorded successfully",
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white',
           icon: 'check_circle',
         });
         emit('close');
       } else {
         $q.notify({
           message: data.msg,
-          color: 'red-14',
+          textColor: 'red-14',
+          color: 'red-3',
+          iconColor: 'red-14',
           icon: 'error',
         });
       }
     })
     .catch((err) => {
-      is_processing.value = false;
       $q.notify({
         message: err.msg,
-        color: 'red-14',
+        textColor: 'red-14',
+        color: 'red-3',
+        iconColor: 'red-14',
         icon: 'error',
       });
-    });
+    })
+    .finally(() => (is_processing.value = false));
 }
 
 function filterFn(val: string, update: (arg0: { (): void; (): void }) => void) {

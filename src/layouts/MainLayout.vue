@@ -21,35 +21,14 @@
           @click="toggleLeftDrawer"
         />
 
-        <q-select
-          :dark="$q.dark.isActive"
-          v-model="analysis_duration"
-          borderless
-          label-color="accent"
-          class="q-ml-md"
-          rounded
-          dense
-          flat
-          :options="analysis_duration_options"
-          option-label="label"
-          option-value="val"
-          emit-value
-          map-options
-        >
-          <template v-slot:prepend>
-            <span class="tw-text-sm">Duration:</span>
-          </template>
-        </q-select>
 
         <q-space></q-space>
-        <!-- <q-btn icon="chat" flat color="accent" dark>
-          <q-badge label="2" class="bg-accent" floating></q-badge>
-        </q-btn> -->
+     
 
         <q-btn
           icon="notifications"
           flat
-          @click="() => (openNotification = true)"
+          @click="() => (openNotification = false)"
         >
           <q-badge
             :label="useNotificationStore().unreadNotfication"
@@ -77,14 +56,15 @@
                   <img src="../assets/admin-user.jpg" />
                 </q-avatar>
 
-                <div class="text-subtitle1 q-mt-md q-mb-xs">Ebube Ireneaus</div>
+                <div class="text-subtitle1 q-mt-md q-mb-xs tw-line-clamp-1">Okigwe Ebube</div>
 
                 <q-btn
-                  color="primary"
                   label="Logout"
-                  push
+                  unelevated
+                  color="accent"
                   size="sm"
                   v-close-popup
+                  to="/auth/logout"
                 />
               </div>
             </div>
@@ -156,7 +136,6 @@
 import {
   defineAsyncComponent,
   inject,
-  onBeforeMount,
   onMounted,
   provide,
   ref,
@@ -180,19 +159,27 @@ const NotificationDialog = defineAsyncComponent(
 defineOptions({
   name: 'MainLayout',
 });
+
 const $q = useQuasar();
+
 const router = useRouter();
+
 const api = inject('api');
 
-let authKey = $q.sessionStorage.getItem('authorisation-key') ?? null;
-const analysis_duration_options = [
-  { label: 'Today', val: 'daily' },
-  { label: 'Last 7 Days', val: 'weekly' },
-  { label: 'This Month', val: 'monthly' },
-];
+let authKey = $q.cookies.get('adminAuthKey') as string;
+
+
+if (!authKey) {
+  router.push('/auth');
+}
+
+provide('adminAuthKey', authKey)
+
+
+
 const analysis_duration = ref('daily');
 
-provide('analysis_duration', analysis_duration)
+provide('analysis_duration', analysis_duration);
 
 const notification = ref<Notification[]>([]);
 
@@ -249,6 +236,7 @@ const leftDrawerOpen = ref(false);
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value;
 }
+
 const darkMode = ref<boolean>(useQuasar().dark.isActive ? true : false);
 
 watch(darkMode, (newMode) => {
@@ -259,19 +247,13 @@ watch(darkMode, (newMode) => {
   }
 });
 
-onBeforeMount(() => {
-  if (!authKey) {
-    router.push('/auth');
-  }
-  
-});
-
 function startScoket() {
   const socket = new WebSocket(
     `${api}/ws?token=${encodeURIComponent(
-      $q.sessionStorage.getItem('authorisation-key') ?? new Date().getTime()
+      $q.cookies.get('adminAuthKey') ?? new Date().getTime()
     )}`
   );
+
   socket.onopen = () => console.log('Listening for connection');
 
   socket.addEventListener('message', (event) => {

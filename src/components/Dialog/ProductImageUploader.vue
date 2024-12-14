@@ -24,7 +24,7 @@ watch(
 );
 
 async function cropImage() {
-  isLoading.value = true
+  isLoading.value = true;
 
   const { canvas } = cropper.value.getResult();
 
@@ -48,45 +48,37 @@ async function cropImage() {
   fetch(`${api}/products/updateImage`, {
     method: 'post',
     body: form,
-    credentials: 'same-origin',
     headers: {
-      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+      Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
     },
   })
     .then((res) => res.json())
 
     .then((data) => {
-
-      isLoading.value = false;
-
       if (data.status) {
-
         updateImg(props.prId, data.filename);
 
         return emit('closeSuccess');
-
       } else {
-
         $q.notify({
           message: data.msg,
-          color: 'red-13',
+          textColor: 'red-14',
+          color: 'red-3',
+          iconColor: 'red-14',
           icon: 'error',
         });
-
-        isLoading.value = false
-
       }
     })
     .catch((error) => {
-
       $q.notify({
         message: error.message,
-        color: 'red-13',
+        textColor: 'red-14',
+        color: 'red-3',
+        iconColor: 'red-14',
         icon: 'error',
       });
-
-      isLoading.value = false;
-    });
+    })
+    .finally(() => (isLoading.value = false));
 }
 </script>
 
@@ -136,7 +128,14 @@ async function cropImage() {
           v-if="src"
         />
 
-        <q-btn label="close" flat color="red-14" class="tw-mx-5" @click="emit('close')" icon="close" />
+        <q-btn
+          label="close"
+          flat
+          color="red-14"
+          class="tw-mx-5"
+          @click="emit('close')"
+          icon="close"
+        />
       </q-card-actions>
     </q-card>
   </q-dialog>

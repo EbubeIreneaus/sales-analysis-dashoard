@@ -1,11 +1,11 @@
 <script lang="ts" setup>
 import { useProductStore } from 'src/stores/Products';
-import { useTimeout, useQuasar } from 'quasar';
+import { useQuasar } from 'quasar';
 import { inject, onMounted, ref } from 'vue';
-const { registerTimeout } = useTimeout();
+
+const emit = defineEmits(['close'])
 
 const is_processing = ref(false);
-const show = ref(true);
 const $q = useQuasar();
 const api = inject('api');
 
@@ -31,10 +31,9 @@ async function recordProducts() {
   fetch(`${api}/products/`, {
     method: 'put',
     body: JSON.stringify(new_products),
-    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+      Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
     },
   })
     .then((res) => res.json())
@@ -42,17 +41,20 @@ async function recordProducts() {
       is_processing.value = false;
 
       if (data.status) {
-        show.value = false;
         $q.notify({
           message: "Product's recorded successfully",
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
           icon: 'check_circle',
+          iconColor: 'white',
         });
       } else {
         $q.notify({
           message: data.msg,
-          color: 'red-14',
+          color: 'red-3',
+          textColor: 'red-13',
           icon: 'error',
+          iconColor: 'red-14',
         });
       }
     })
@@ -60,8 +62,10 @@ async function recordProducts() {
       is_processing.value = false;
       $q.notify({
         message: err.message,
-        color: 'red-14',
+        color: 'red-3',
+        textColor: 'red-13',
         icon: 'error',
+        iconColor: 'red-14',
       });
     });
 }
@@ -78,13 +82,11 @@ function monitorInput(index: number) {
 
 onMounted(() => {
   // form.value.push({ });
-
-  console.log(form.value.length);
 });
 </script>
 
 <template>
-  <q-dialog position="bottom" v-model="show" persistent>
+  <q-dialog position="bottom" :model-value="true" persistent>
     <q-card class="tw-max-w-xl tw-w-full tw-py-5" flat>
       <q-card-section>
         <div class="tw-flex tw-justify-between tw-items-center">
@@ -104,11 +106,7 @@ onMounted(() => {
         <q-card-section>
           <div class="tw-mb-5" v-auto-animate>
             <div class="tw-mb-5">
-              <div
-                class=" tw-mb-3"
-                v-for="(_, index) in form"
-                :key="index"
-              >
+              <div class="tw-mb-3" v-for="(_, index) in form" :key="index">
                 <div class="tw-flex tw-items-center">
                   <q-btn
                     icon="close"
@@ -166,7 +164,7 @@ onMounted(() => {
               label="Close"
               color="red-12"
               class="tw-inline-block tw-float-right tw-mx-auto"
-              v-close-popup
+              @click="emit('close')"
             />
           </div>
         </q-card-section>

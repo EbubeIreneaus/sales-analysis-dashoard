@@ -19,38 +19,42 @@ function recordExpense() {
   fetch(`${api}/expenses`, {
     method: 'put',
     body: JSON.stringify(form),
-    credentials: 'same-origin',
     headers: {
       'Content-Type': 'application/json',
-      authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+      Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
     },
   })
     .then((res) => res.json())
     .then((data) => {
-      is_processing.value = false;
       if (data.status) {
         $q.notify({
           message: 'Expense recorded successfully',
-          color: 'green-14',
+          color: 'green-10',
+          textColor: 'white',
+          iconColor: 'white',
           icon: 'check_circle',
         });
         emit('close');
       } else {
         $q.notify({
           message: data.msg,
-          color: 'red-14',
+          textColor: 'red-14',
+          color: 'red-3',
+          iconColor: 'red-14',
           icon: 'error',
         });
       }
     })
     .catch((err) => {
-      is_processing.value = false
       $q.notify({
         message: err.msg,
-        color: 'red-14',
+        textColor: 'red-14',
+        color: 'red-3',
+        iconColor: 'red-14',
         icon: 'error',
       });
-    });
+    })
+    .finally(() => (is_processing.value = false));
 }
 </script>
 
@@ -77,7 +81,11 @@ function recordExpense() {
                   filled
                   class="tw-col-span-1 tw-px-2"
                   :options="categories"
-                  :rules="[val => val && categories.includes(val) || 'please select a valid option']"
+                  :rules="[
+                    (val) =>
+                      (val && categories.includes(val)) ||
+                      'please select a valid option',
+                  ]"
                   required
                 />
 
@@ -89,7 +97,10 @@ function recordExpense() {
                   label="Amount Spent"
                   class="tw-col-span-1 tw-px-2"
                   required
-                  :rules="[(val) => val && parseInt(val) || 'please enter a correct value']"
+                  :rules="[
+                    (val) =>
+                      (val && parseInt(val)) || 'please enter a correct value',
+                  ]"
                 />
 
                 <q-input

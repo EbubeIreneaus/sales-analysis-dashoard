@@ -83,37 +83,39 @@ async function saveImage() {
         method: 'post',
         body: form,
         headers: {
-          'authKey': $q.sessionStorage.getItem('authorisation-key') || '',
+          Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
         },
       })
     ).json();
 
     if (res.status) {
       $q.notify({
-        color: 'dark',
-        iconColor: 'green-12',
+        color: 'green-10',
+        iconColor: 'white',
         message: 'save successfull',
-        icon: 'check',
-        textColor: 'green-1',
+        icon: 'check_circle',
+        textColor: 'white',
       });
       return (isUpdatingImage.value = false);
     }
+
     $q.notify({
-      color: 'dark',
-      iconColor: 'red-12',
-      message: 'unknown error',
-      icon: 'error',
-      textColor: 'red-1',
+      color: 'red-3',
+      iconColor: 'red-14',
+      message: res.msg,
+      icon: 'cancel',
+      textColor: 'red-14',
     });
     return (isUpdatingImage.value = false);
-  } catch (error) {
-    console.log(error);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     $q.notify({
-      color: 'dark',
-      iconColor: 'red-12',
-      message: 'unknown error',
-      icon: 'error',
-      textColor: 'red-1',
+      color: 'red-3',
+      iconColor: 'red-14',
+      message: error?.message ,
+      icon: 'cancel',
+      textColor: 'red-14',
     });
     return (isUpdatingImage.value = false);
   }
@@ -143,7 +145,7 @@ async function saveImage() {
             class="tw-w-[250px] tw-mb-2 tw-inline-block tw-me-5"
             display-value="Choose profile pics"
             accept=".jpg, .png"
-            bg-color="dark-page"
+            :bg-color="$q.dark.isActive?'dark-page': ''"
             dense
             :loading="isUpdatingImage ? true : false"
           >
@@ -164,16 +166,16 @@ async function saveImage() {
         <q-input
           v-model="user.firstname"
           label="Firstname"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           required
           readonly
         />
         <q-input
           v-model="user.lastname"
           label="Lastname"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           required
           readonly
         />
@@ -181,8 +183,8 @@ async function saveImage() {
           v-model="user.email"
           label="Email"
           type="email"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           required
           readonly
           class="tw-col-span-2"
@@ -190,24 +192,24 @@ async function saveImage() {
         <q-input
           v-model="user.username"
           label="Username"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           readonly
         />
 
         <q-input
           :model-value="new Date(user.joined).toDateString()"
           label="Date Joined"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           readonly
         />
         <q-checkbox
           v-model="user.admin"
           label="Administrative Priviledge"
           color="accent"
-          standout="bg-dark"
-          input-class="text-white"
+          standout
+          input-class=""
           disable
         />
       </div>

@@ -25,17 +25,22 @@
 </template>
 
 <script setup>
-import { colors, useQuasar } from 'quasar';
+import {  useQuasar } from 'quasar';
 import { usesalesStore } from 'src/stores/sales';
 import { useExpenseStore } from 'src/stores/expenses';
 import { ref, computed } from 'vue';
 const dataBy = ref('days');
 import moment, { max } from 'moment';
-const sales = computed(() => usesalesStore().sales);
-const expense = computed(() => useExpenseStore().Expenses);
+import { storeToRefs } from 'pinia';
+
 
 const today = new Date();
 // sevenDaysAgo.setDate(new Date().getDate() - 7);
+const SalesStore = usesalesStore()
+const ExpensesStore = useExpenseStore()
+
+const {sales} = storeToRefs(SalesStore)
+const {Expenses: expense} = storeToRefs(ExpensesStore)
 
 const filteredSales = computed(() => {
   const f_sales = sales.value.filter((sale) => {
@@ -81,10 +86,12 @@ const revenueSeries = computed(() => {
       { x: 'Fri', y: 0 },
       { x: 'Sat', y: 0 },
     ];
-    console.log(filteredSales.value);
     filteredSales.value.forEach((sale) => {
       const day = new Date(sale.createdAt).getDay();
-      return (series[day].y += parseInt(sale.amount));
+      // if sale day is sunday(0) then
+      // increment the value of sale on sunday
+      // series[0].y = series[0].y += sale.amount
+      return (series[day].y += parseInt(sale.amount || '0'));
     });
     return series;
   } else {
@@ -105,7 +112,7 @@ const revenueSeries = computed(() => {
     console.log(filteredSales.value);
     filteredSales.value.forEach((sale) => {
       const month = new Date(sale.createdAt).getMonth();
-      return (series[month].y += parseInt(sale.amount));
+      return (series[month].y += parseInt(sale.amount || '0'));
     });
     return series;
   }
@@ -125,7 +132,8 @@ const expenseSeries = computed(() => {
 
     filteredExpenses.value.forEach((expense) => {
       const day = new Date(expense.createdAt).getDay();
-      return (series[day].y += parseInt(expense.amount));
+      // dont understand, refer to revenueSeries to understand
+      return (series[day].y += parseInt(expense.amount || '0'));
     });
     return series;
   } else {
@@ -146,7 +154,7 @@ const expenseSeries = computed(() => {
 
     filteredExpenses.value.forEach((expense) => {
       const month = new Date(expense.createdAt).getMonth();
-      return (series[month].y += parseInt(expense.amount));
+      return (series[month].y += parseInt(expense.amount || '0'));
     });
     return series;
   }
@@ -169,9 +177,9 @@ const profitSeries = computed(() => {
       const sp = sale.sold_products;
       let profit = 0;
       sp.forEach((spv) => {
-        const product_sold_amount = spv.amount;
+        const product_sold_amount = spv.amount || 0;
         const product_quantity_sold = spv.quantity;
-        const product_unit_price = spv.product.unit_price;
+        const product_unit_price = spv.product.unit_price || 0;
         let this_product_profit =
           product_sold_amount - product_unit_price * product_quantity_sold;
         profit += this_product_profit;
@@ -200,9 +208,9 @@ const profitSeries = computed(() => {
       const sp = sale.sold_products;
       let profit = 0;
       sp.forEach((spv) => {
-        const product_sold_amount = spv.amount;
+        const product_sold_amount = spv.amount || 0;
         const product_quantity_sold = spv.quantity;
-        const product_unit_price = spv.product.unit_price;
+        const product_unit_price = spv.product.unit_price || 0;
         let this_product_profit =
           product_sold_amount - product_unit_price * product_quantity_sold;
         profit += this_product_profit;

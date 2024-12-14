@@ -2,12 +2,16 @@
 import { computed } from 'vue';
 import { usesalesStore } from 'src/stores/sales';
 import { useExpenseStore } from 'src/stores/expenses';
+import { storeToRefs } from 'pinia';
 // import { SalesType } from 'src/types/SalesTypes';
 // import type { ExpenseType } from 'src/types/ExpenseType';
 
 // const duration: Ref = inject('analysis_duration') as Ref;
-const sales = computed(() => usesalesStore().sales);
-const expense = computed(() => useExpenseStore().Expenses)
+const SalesStore = usesalesStore()
+const ExpensesStore = useExpenseStore()
+
+const {sales} = storeToRefs(SalesStore);
+const {Expenses: expense} = storeToRefs(ExpensesStore)
 
 const sevenDaysAgo = new Date();
 sevenDaysAgo.setDate(new Date().getDate() - 7);
@@ -30,7 +34,7 @@ const filteredExpenses = computed(() => {
 
 const thisWeekSales = computed(() => {
   const amount = filteredSales.value.reduce(
-    (x, y) => x + parseInt(y.amount.toString()),
+    (x, y) => x + parseInt(y.amount?.toString() || '0'),
     0
   );
   return amount;
@@ -50,9 +54,9 @@ const totalProfitThisWeek = computed(() => {
   filteredSales.value.forEach((sales) => {
     const sp = sales.sold_products
     sp.forEach((spv) => {
-      const product_sold_amount = spv.amount;
+      const product_sold_amount = spv.amount || 0;
       const product_quantity_sold = spv.quantity
-      const product_unit_price = spv.product.unit_price
+      const product_unit_price = spv.product.unit_price || 0
       let this_product_profit = product_sold_amount - (product_unit_price * product_quantity_sold)
       profit += this_product_profit
     })

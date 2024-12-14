@@ -2,18 +2,17 @@
 import type { Product } from 'src/types/ProductTypes';
 import { QTableColumn, useTimeout, useQuasar } from 'quasar';
 import { useProductStore } from 'src/stores/Products';
-import {
-  defineAsyncComponent,
-  inject,
-  onMounted,
-  ref,
-  watch,
-} from 'vue';
+import { defineAsyncComponent, inject, onMounted, ref, watch } from 'vue';
+import { storeToRefs } from 'pinia';
 const EditProductDialog = defineAsyncComponent(
   () => import('src/components/Dialog/EditProductDialog.vue')
 );
 const ProductImageDialog = defineAsyncComponent(
   () => import('src/components/Dialog/ProductImageUploader.vue')
+);
+
+const EditProductStoreDialog = defineAsyncComponent(
+  () => import('src/components/Dialog/EdtProductStoreDialog.vue')
 );
 
 const api = inject('api');
@@ -22,14 +21,22 @@ const props = defineProps<{ page: 'home' | 'product' }>();
 
 const $q = useQuasar();
 
-const products = ref<Product[]>(useProductStore().product);
+const ProductStore = useProductStore();
+
+const { product: products } = storeToRefs(ProductStore);
 
 const search = ref('');
 
 const product_to_edit_id = ref<number>(0);
+
 const showEdit = ref(false);
+
 const showPrImageUploader = ref(false);
+
 const prImageToEdit = ref();
+
+const showPrStoreEditDialog = ref(false);
+
 const { registerTimeout } = useTimeout();
 
 let columns: QTableColumn[] = [
@@ -55,6 +62,13 @@ let columns: QTableColumn[] = [
     align: 'left',
   },
   {
+    name: 'store',
+    field: 'store',
+    label: 'Website',
+    sortable: true,
+    align: 'left',
+  },
+  {
     name: 'unit_price',
     label: 'Unit Price',
     sortable: true,
@@ -68,6 +82,14 @@ let columns: QTableColumn[] = [
     field: 'market_price',
     align: 'left',
   },
+
+  {
+    name: 'category',
+    label: 'Category',
+    sortable: true,
+    field: 'category',
+    align: 'left',
+  },
 ];
 
 if (props.page === 'product') {
@@ -78,13 +100,6 @@ if (props.page === 'product') {
     align: 'left',
   });
 }
-
-watch(
-  () => useProductStore().product,
-  (val) => {
-    products.value = val;
-  }
-);
 
 watch(
   () => search.value.toLowerCase(),
@@ -113,9 +128,8 @@ function deleteProduct(id: number) {
     fetch(`${api}/products`, {
       method: 'delete',
       body: JSON.stringify({ productId: id }),
-      credentials: 'same-origin',
       headers: {
-        authKey: $q.sessionStorage.getItem('authorisation-key') ?? '',
+        Authorization: `Bearer ${$q.cookies.get('adminAuthKey')}`,
         'Content-Type': 'application/json',
       },
     })
@@ -124,22 +138,27 @@ function deleteProduct(id: number) {
         if (data.status) {
           $q.notify({
             message: 'Product deleted successfully',
-            color: 'green-14',
+            color: 'green-10',
+            textColor: 'white',
             icon: 'check_circle',
           });
         } else {
           $q.notify({
             message: data.msg,
-            color: 'red-14',
+            color: 'red-3',
+            textColor: 'red-14',
             icon: 'error',
+            iconColor: 'red-14',
           });
         }
       })
       .catch((err) => {
         $q.notify({
           message: err.message,
-          color: 'red-14',
+          color: 'red-3',
+          textColor: 'red-14',
           icon: 'error',
+          iconColor: 'red-14',
         });
       });
   });
@@ -155,6 +174,11 @@ function updateProductImgae(id: number | null, action: 'open' | 'close') {
   }
 }
 
+function updateProductStore(id: number) {
+  showPrStoreEditDialog.value = true;
+  product_to_edit_id.value = id;
+}
+
 function dismissImageEditDialogWithSuccess() {
   showPrImageUploader.value = false;
   $q.notify({
@@ -164,9 +188,8 @@ function dismissImageEditDialogWithSuccess() {
   });
 }
 
-
 onMounted(() => {
-//
+  //
 });
 </script>
 
@@ -193,6 +216,7 @@ onMounted(() => {
           </div>
         </div>
       </q-card-section>
+
       <q-card-section>
         <q-table
           :rows="products"
@@ -210,6 +234,7 @@ onMounted(() => {
                   class="tw-rounded-md"
                   v-if="props.row.image"
                 />
+
                 <q-img
                   width="50px"
                   src="~assets/images/placeholder.png"
@@ -217,12 +242,22 @@ onMounted(() => {
                   v-else
                 />
               </td>
+
               <td class="tw-uppercase">
                 {{ props.row.name }}
               </td>
 
               <td class="tw-font-mono">
                 <span class="tw-text-base">{{ props.row.quantity }}</span>
+              </td>
+
+              <td>
+                <q-icon
+                  name="check_circle"
+                  color="green-14"
+                  v-if="props.row.store"
+                />
+                <q-icon name="cancel" color="red-14" v-else />
               </td>
 
               <td class="tw-font-mono">
@@ -239,6 +274,12 @@ onMounted(() => {
                 ></span>
               </td>
 
+              <td class="tw-font-mono">
+                <span class="tw-text-base">{{
+                  props.row.category || 'Nill'
+                }}</span>
+              </td>
+
               <td class="" v-if="page === 'product'">
                 <q-btn icon="more_vert" flat dense>
                   <q-menu square auto-close>
@@ -249,7 +290,12 @@ onMounted(() => {
                       size="md"
                       color="accent"
                       @click="updateProductEditId(props.row.id)"
-                    />
+                    >
+                      <q-tooltip title="Edit product details"
+                        >Edit product details</q-tooltip
+                      >
+                    </q-btn>
+
                     <q-btn
                       icon="image"
                       label=""
@@ -257,7 +303,14 @@ onMounted(() => {
                       size="md"
                       color="green-14"
                       @click="updateProductImgae(props.row.id, 'open')"
-                    />
+                    >
+                      <q-tooltip
+                        title="Update product image, will be updated on store."
+                        >Update product image, will be updated on
+                        store.</q-tooltip
+                      >
+                    </q-btn>
+
                     <q-btn
                       icon="delete"
                       label=""
@@ -265,7 +318,23 @@ onMounted(() => {
                       size="md"
                       color="red-13"
                       @click="deleteProduct(props.row.id)"
-                    />
+                    >
+                      <q-tooltip title="Delete this product"
+                        >Delete this product</q-tooltip
+                      >
+                    </q-btn>
+
+                    <q-btn
+                      icon="public"
+                      flat
+                      size="md"
+                      color="accent"
+                      @click="updateProductStore(props.row.id)"
+                    >
+                      <q-tooltip title="change product-store details"
+                        >change product-store details</q-tooltip
+                      >
+                    </q-btn>
                   </q-menu>
                 </q-btn>
               </td>
@@ -281,7 +350,13 @@ onMounted(() => {
       v-if="showPrImageUploader"
       :prId="prImageToEdit"
       @close-success="dismissImageEditDialogWithSuccess"
-      @close="()=>showPrImageUploader = false"
+      @close="() => (showPrImageUploader = false)"
+    />
+
+    <edit-product-store-dialog
+      :product-id="product_to_edit_id"
+      v-if="showPrStoreEditDialog"
+      @close="() => (showPrStoreEditDialog = false)"
     />
   </div>
 </template>

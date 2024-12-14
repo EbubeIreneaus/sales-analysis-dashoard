@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { defineStore } from 'pinia';
 import { inject, ref } from 'vue';
-import { SessionStorage } from 'quasar';
+// import { SessionStorage } from 'quasar';
 import type { SalesType } from 'src/types/SalesTypes';
 
 export const usesalesStore = defineStore('sales', () => {
@@ -11,9 +11,6 @@ export const usesalesStore = defineStore('sales', () => {
   function initialize() {
     fetch(`${api}/sales/all`, {
       method: 'get',
-      headers: {
-        authKey: SessionStorage.getItem('authorisation-key') ?? '',
-      },
     })
       .then((res) => res.json())
       .then((data) => {
